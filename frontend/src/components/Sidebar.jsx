@@ -6,7 +6,7 @@ import { Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, unreadMessages, getLastMessageTime, viewUserProfile } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading, unreadMessages, getLastMessageTime } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const navigate = useNavigate();

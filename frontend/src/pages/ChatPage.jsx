@@ -21,7 +21,7 @@ const ChatPage = () => {
           src={selectedUser?.profilePic || "/avatar.png"}
           alt={selectedUser?.name}
           className="size-12 object-cover rounded-full cursor-pointer"
-          onClick={() => navigate(`/profile/${userId}`)} // Navigate to user profile on avatar click
+          onClick={() => navigate(`/user/${userId}`)} // Navigate to user profile on avatar click
         />
         <div className="ml-4">
           <div className="font-medium">{selectedUser?.fullName}</div>
