@@ -98,9 +98,4 @@ export const useChatStore = create((set, get) => ({
       return null;
     }
   },
-
-  viewUserProfile: (userId) => {
-    const navigate = useNavigate();
-    navigate(`/profile/${userId}`);
-  },
 }));

@@ -64,7 +64,10 @@ const Sidebar = () => {
                 src={user.profilePic || "/avatar.png"}
                 alt={user.name}
                 className="size-12 object-cover rounded-full cursor-pointer"
-                onClick={() => viewUserProfile(user._id)} // Navigate to user profile on avatar click
+                onClick={() => {
+                  setSelectedUser(user);
+                  navigate(`/chat/${user._id}`);
+                }} // Start chatting with the user on avatar click
               />
               {onlineUsers.includes(user._id) && (
                 <span
