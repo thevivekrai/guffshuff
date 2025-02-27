@@ -97,11 +97,4 @@ export const useChatStore = create((set, get) => ({
       return null;
     }
   },
-
-  getLastMessageTime: (userId) => {
-    const { messages } = get();
-    const userMessages = messages.filter((msg) => msg.senderId === userId || msg.receiverId === userId);
-    if (userMessages.length === 0) return null;
-    return userMessages[userMessages.length - 1].createdAt;
-  },
 }));

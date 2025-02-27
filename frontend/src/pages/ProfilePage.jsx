@@ -74,6 +74,10 @@ const ProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.username.length < 5) {
+      toast.error("Username must be at least 5 characters long");
+      return;
+    }
     try {
       await updateProfile(formData);
       toast.success("Profile updated successfully");
@@ -174,7 +178,12 @@ const ProfilePage = () => {
                 <User className="w-4 h-4" />
                 School/College
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.school}</p>
+              <input
+                type="text"
+                className="px-4 py-2.5 bg-base-200 rounded-lg border w-full"
+                value={formData.school}
+                onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+              />
             </div>
 
             <button type="submit" className="btn btn-primary w-full" disabled={isUpdatingProfile}>
