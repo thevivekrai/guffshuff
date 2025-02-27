@@ -2,6 +2,7 @@ import { create } from "zustand";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../lib/axios";
 import { useAuthStore } from "./useAuthStore";
+import { useNavigate } from "react-router-dom";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -96,5 +97,10 @@ export const useChatStore = create((set, get) => ({
       toast.error("Failed to fetch user information");
       return null;
     }
+  },
+
+  viewUserProfile: (userId) => {
+    const navigate = useNavigate();
+    navigate(`/profile/${userId}`);
   },
 }));
