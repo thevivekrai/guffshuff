@@ -79,7 +79,10 @@ const Sidebar = () => {
 
             {/* User info - only visible on larger screens */}
             <button
-              onClick={() => setSelectedUser(user)}
+              onClick={() => {
+                setSelectedUser(user);
+                navigate(`/chat/${user._id}`);
+              }}
               className="hidden lg:block text-left min-w-0 flex-1"
             >
               <div className="font-medium truncate">{user.fullName}</div>

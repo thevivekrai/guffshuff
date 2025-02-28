@@ -5,14 +5,18 @@ import { useAuthStore } from "../store/useAuthStore";
 
 const ChatPage = () => {
   const { userId } = useParams();
-  const { getMessages, messages, selectedUser, setSelectedUser } = useChatStore();
+  const { getMessages, messages, selectedUser, setSelectedUser, getUserById } = useChatStore();
   const { authUser } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
-    setSelectedUser({ _id: userId });
-    getMessages(userId);
-  }, [userId, getMessages, setSelectedUser]);
+    const fetchUserAndMessages = async () => {
+      const user = await getUserById(userId);
+      setSelectedUser(user);
+      getMessages(userId);
+    };
+    fetchUserAndMessages();
+  }, [userId, getMessages, setSelectedUser, getUserById]);
 
   return (
     <div className="h-screen flex flex-col">

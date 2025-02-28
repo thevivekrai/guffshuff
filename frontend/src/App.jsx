@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import UserProfilePage from "./pages/UserProfilePage";
+import ChatPage from "./pages/ChatPage"; // Ensure ChatPage is imported
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
@@ -45,6 +46,7 @@ const App = () => {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
         <Route path="/user/:userId" element={<UserProfilePage />} />
+        <Route path="/chat/:userId" element={authUser ? <HomePage /> : <Navigate to="/login" />} /> {/* Ensure HomePage is used */}
       </Routes>
 
       <Toaster />
