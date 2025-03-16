@@ -100,7 +100,8 @@ const SignUpPage = () => {
     if (!formData.fullName.trim()) return toast.error("Full name is required");
     if (!formData.username.trim()) return toast.error("Username is required");
     if (formData.username.length < 5) return toast.error("Username must be at least 5 characters");
-    if (!/^[a-z0-9]+$/.test(formData.username)) return toast.error("Username must be lowercase and contain no special characters or spaces");
+   if (!/^[a-z0-9!@#$%^&*()_+\-=<>?]+$/.test(formData.username))return toast.error("Username must be lowercase and cannot include no spaces");
+
     if (!formData.password) return toast.error("Password is required");
     if (formData.password.length < 6) return toast.error("Password must be at least 6 characters");
     if (!formData.school) return toast.error("School/College is required");
