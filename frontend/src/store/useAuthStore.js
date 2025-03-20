@@ -36,7 +36,9 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
-      if (error.response.data.message === "Username already exists") {
+      if (error.response.data.message === "Email already exists") {
+        toast.error("Email already exists");
+      } else if (error.response.data.message === "Username already exists") {
         toast.error("Username already exists");
       } else {
         toast.error(error.response.data.message);
