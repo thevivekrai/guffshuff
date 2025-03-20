@@ -4,10 +4,20 @@ import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const { fullName, username, password, school } = req.body;
+  const { fullName, username, password, school, email } = req.body;
   try {
-    if (!fullName || !username || !password) {
+    if (!fullName || !username || !password || !email) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email already exists" });
     }
 
     if (username.length < 5) {
@@ -30,6 +40,7 @@ export const signup = async (req, res) => {
       username,
       password: hashedPassword,
       school,
+      email, // Add email to the user object
     });
 
     if (newUser) {
