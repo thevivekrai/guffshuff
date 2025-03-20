@@ -91,7 +91,8 @@ const SignUpPage = () => {
     password: "",
     school: "",
     otherSchool: "",
-    bio: ""
+    bio: "",
+    email: "", // Add email field
   });
 
   const { signup, isSigningUp } = useAuthStore();
@@ -106,6 +107,9 @@ const SignUpPage = () => {
     if (formData.password.length < 6) return toast.error("Password must be at least 6 characters");
     if (!formData.school) return toast.error("School/College is required");
     if (formData.school === "Other" && !formData.otherSchool.trim()) return toast.error("Please specify your school/college");
+    if (!formData.email.trim()) return toast.error("Email is required");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) return toast.error("Invalid email format");
 
     return true;
   };
@@ -268,6 +272,21 @@ const SignUpPage = () => {
                   placeholder="Tell us about yourself"
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Email</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  className="input input-bordered w-full"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
             </div>
