@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../lib/axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { useChatStore } from '../store/useChatStore';
 import toast from 'react-hot-toast';
 import { Heart, Loader, MessageCircle, X } from 'lucide-react';
 
@@ -12,19 +13,38 @@ const MatchesPage = () => {
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [matchedUser, setMatchedUser] = useState(null);
   const [hasMore, setHasMore] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchInitialMatches();
-  }, []);
+    const loadInitialMatches = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get('/matches/potential');
+        if (response.data && response.data.length > 0) {
+          // Filter valid matches
+          const validMatches = response.data.filter(match => 
+            match && match._id && match.fullName
+          );
+          // Randomize the order of matches
+          const shuffledMatches = [...validMatches].sort(() => Math.random() - 0.5);
+          setPotentialMatches(shuffledMatches);
+          setHasMore(true);
+        } else {
+          setPotentialMatches([]);
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Error loading matches:', error);
+        toast.error('Failed to load matches');
+        setPotentialMatches([]);
+        setHasMore(false);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Add another useEffect to handle auto-loading more matches
-  useEffect(() => {
-    if (potentialMatches.length < 5 && hasMore) {
-      fetchMoreMatches();
-    }
-  }, [potentialMatches.length, hasMore]);
+    loadInitialMatches();
+  }, []);
 
   const handleLike = async () => {
     const currentMatch = potentialMatches[currentIndex];
@@ -127,22 +147,19 @@ const MatchesPage = () => {
     setCurrentIndex(prev => prev + 1);
   };
 
-  const handleStartChat = async () => {
-    if (matchedUser && matchedUser._id) {
-      try {
-        // Update selected user in chat store
-        const { setSelectedUser } = useChatStore.getState();
-        await setSelectedUser(matchedUser);
-        
-        // Close modal and navigate
-        setMatchModalOpen(false);
-        navigate(`/chat/${matchedUser._id}`);
-      } catch (error) {
-        console.error('Error starting chat:', error);
-        toast.error('Unable to start chat. Please try again.');
-      }
-    } else {
+  const handleStartChat = () => {
+    if (!matchedUser?._id) {
       toast.error('Unable to start chat. Invalid user data.');
+      return;
+    }
+    
+    try {
+      // Navigate to chat with the matched user
+      setMatchModalOpen(false);
+      navigate(`/chat/${matchedUser._id}`);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      toast.error('Unable to start chat. Please try again.');
     }
   };
 
@@ -162,7 +179,7 @@ const MatchesPage = () => {
         <h2 className="text-2xl font-bold mb-4">No More Matches</h2>
         <p className="text-gray-600 mb-4">Check back later for new potential matches!</p>
         <button 
-          onClick={fetchPotentialMatches}
+          onClick={fetchInitialMatches}
           className="btn btn-primary"
         >
           Refresh Matches
@@ -179,7 +196,7 @@ const MatchesPage = () => {
         <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
         <p className="text-gray-600 mb-4">Unable to load match information</p>
         <button 
-          onClick={fetchPotentialMatches}
+          onClick={fetchInitialMatches}
           className="btn btn-primary"
         >
           Try Again
