@@ -8,10 +8,12 @@ export const getPotentialMatches = async (req, res) => {
 
     // Find users from the same school who are not already matched
     const potentialMatches = await User.find({
-      _id: { $ne: userId },
-      school: currentUser.school,
-      _id: { $nin: [...currentUser.matches, ...currentUser.likes] }
-    }).select("-password");
+      $and: [
+        { _id: { $ne: userId } },
+        { school: currentUser.school },
+        { _id: { $nin: [...currentUser.matches, ...currentUser.likes] } }
+      ]
+    }).select("-password -matches -likes");
 
     res.status(200).json(potentialMatches);
   } catch (error) {
