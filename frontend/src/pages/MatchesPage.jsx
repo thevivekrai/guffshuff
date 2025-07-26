@@ -16,39 +16,15 @@ const MatchesPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchPotentialMatches = async () => {
-      try {
-        const response = await axiosInstance.get('/matches/potential');
-        if (!response.data || response.data.length === 0) {
-          setHasMore(false);
-          setPotentialMatches([]);
-        } else {
-          // Filter out any matches without required fields
-          const validMatches = response.data.filter(match => 
-            match && match._id && match.fullName && match.school
-          );
-          
-          // Shuffle the valid matches
-          const shuffledMatches = [...validMatches].sort(() => Math.random() - 0.5);
-          setPotentialMatches(shuffledMatches);
-          setHasMore(true);
-        }
-      } catch (error) {
-        console.error('Error loading matches:', error);
-        if (retryCount < 3) {
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-          }, 2000); // Retry after 2 seconds
-        } else {
-          toast.error('Unable to load matches. Please try again later.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPotentialMatches();
+    fetchInitialMatches();
   }, []);
+
+  // Add another useEffect to handle auto-loading more matches
+  useEffect(() => {
+    if (potentialMatches.length < 5 && hasMore) {
+      fetchMoreMatches();
+    }
+  }, [potentialMatches.length, hasMore]);
 
   const handleLike = async () => {
     const currentMatch = potentialMatches[currentIndex];
@@ -63,56 +39,86 @@ const MatchesPage = () => {
       });
 
       if (response.data.match) {
-        // Create the match in the chat store
         setMatchedUser({
+          ...currentMatch,
           _id: currentMatch._id,
           fullName: currentMatch.fullName,
-          profilePic: currentMatch.profilePic,
-          school: currentMatch.school,
-          bio: currentMatch.bio
+          profilePic: currentMatch.profilePic
         });
         setMatchModalOpen(true);
+        
+        // Remove matched user from potentialMatches
+        setPotentialMatches(prev => {
+          const updated = prev.filter(m => m._id !== currentMatch._id);
+          // If we're running low on matches, fetch more
+          if (updated.length < 5) {
+            fetchMoreMatches();
+          }
+          return updated;
+        });
       }
 
-      // Remove the current match from the array
-      setPotentialMatches(prev => prev.filter(match => match._id !== currentMatch._id));
-
-      // If we're running low on matches, fetch more
-      if (potentialMatches.length <= 3) {
-        fetchPotentialMatches();
-      }
-
-      // Move to next match or show no more matches
+      // Move to next match
       if (currentIndex >= potentialMatches.length - 1) {
         setCurrentIndex(0);
       } else {
         setCurrentIndex(prev => prev + 1);
       }
+
     } catch (error) {
       console.error('Like error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to like user';
       toast.error(errorMessage);
-      
-      // If we get a 500 error, wait a moment and try to refresh the matches
-      if (error.response?.status === 500) {
-        setTimeout(() => {
-          fetchPotentialMatches();
-        }, 1000);
-      }
     }
   };
   
-  const fetchPotentialMatches = async () => {
+  const fetchMoreMatches = async () => {
     try {
       const response = await axiosInstance.get('/matches/potential');
-      // Shuffle the matches array to randomize the order
-      const shuffledMatches = response.data.sort(() => Math.random() - 0.5);
-      setPotentialMatches(shuffledMatches);
-      setCurrentIndex(0);
-      setLoading(false);
+      if (response.data && response.data.length > 0) {
+        // Filter valid matches and shuffle them
+        const validMatches = response.data.filter(match => 
+          match && match._id && match.fullName && match.school
+        );
+        const shuffledMatches = validMatches.sort(() => Math.random() - 0.5);
+        
+        // Combine with existing matches, removing duplicates
+        setPotentialMatches(prev => {
+          const existingIds = new Set(prev.map(m => m._id));
+          const newMatches = shuffledMatches.filter(m => !existingIds.has(m._id));
+          return [...prev, ...newMatches];
+        });
+        setHasMore(true);
+      } else {
+        setHasMore(false);
+      }
     } catch (error) {
-      console.error('Error loading matches:', error);
-      toast.error(error.response?.data?.message || 'Failed to load potential matches');
+      console.error('Error fetching more matches:', error);
+      toast.error('Failed to load more matches');
+    }
+  };
+
+  const fetchInitialMatches = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get('/matches/potential');
+      if (response.data && response.data.length > 0) {
+        const validMatches = response.data.filter(match => 
+          match && match._id && match.fullName && match.school
+        );
+        const shuffledMatches = validMatches.sort(() => Math.random() - 0.5);
+        setPotentialMatches(shuffledMatches);
+        setHasMore(true);
+      } else {
+        setPotentialMatches([]);
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading initial matches:', error);
+      toast.error('Failed to load matches');
+      setPotentialMatches([]);
+      setHasMore(false);
+    } finally {
       setLoading(false);
     }
   };
@@ -121,15 +127,22 @@ const MatchesPage = () => {
     setCurrentIndex(prev => prev + 1);
   };
 
-  const handleStartChat = () => {
+  const handleStartChat = async () => {
     if (matchedUser && matchedUser._id) {
-      setMatchModalOpen(false); // Close the modal first
-      // Small delay to allow modal animation to complete
-      setTimeout(() => {
+      try {
+        // Update selected user in chat store
+        const { setSelectedUser } = useChatStore.getState();
+        await setSelectedUser(matchedUser);
+        
+        // Close modal and navigate
+        setMatchModalOpen(false);
         navigate(`/chat/${matchedUser._id}`);
-      }, 100);
+      } catch (error) {
+        console.error('Error starting chat:', error);
+        toast.error('Unable to start chat. Please try again.');
+      }
     } else {
-      toast.error('Unable to start chat. Please try again.');
+      toast.error('Unable to start chat. Invalid user data.');
     }
   };
 
