@@ -14,6 +14,7 @@ const MatchesPage = () => {
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [matchedUser, setMatchedUser] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [imgError, setImgError] = useState({});
   const navigate = useNavigate();
   const theme = useThemeStore(state => state.theme);
 
@@ -75,8 +76,10 @@ const MatchesPage = () => {
   }, []);
 
   const handleLike = async () => {
-    // Prevent multiple simultaneous likes
-    if (isLoading) return;
+    if (isLoading) {
+      toast.error('Please wait while processing previous action');
+      return;
+    }
     
     const currentMatch = potentialMatches[currentIndex];
     if (!currentMatch || !currentMatch._id) {
@@ -264,9 +267,10 @@ const MatchesPage = () => {
           theme === 'dark' ? 'bg-gray-800' : 'bg-white'
         }`}>
           <img 
-            src={currentMatch.profilePic || '/avatar.png'} 
+            src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
             alt={currentMatch.fullName}
             className="w-full h-96 object-cover"
+            onError={() => setImgError(prev => ({ ...prev, [currentMatch._id]: true }))}
           />
           <div className={`p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
             <h2 className={`text-2xl font-bold mb-2 ${
@@ -328,9 +332,10 @@ const MatchesPage = () => {
               <Heart className="w-10 h-10 text-red-500 animate-pulse" />
               <div className="relative">
                 <img
-                  src={matchedUser.profilePic || '/avatar.png'}
+                  src={imgError[matchedUser._id] ? '/avatar.png' : (matchedUser.profilePic || '/avatar.png')}
                   alt={matchedUser.fullName}
                   className="w-20 h-20 rounded-full border-4 border-red-500"
+                  onError={() => setImgError(prev => ({ ...prev, [matchedUser._id]: true }))}
                 />
               </div>
             </div>
