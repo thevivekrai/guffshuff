@@ -6,14 +6,15 @@ export const getPotentialMatches = async (req, res) => {
     const userId = req.user._id;
     const currentUser = await User.findById(userId);
 
-    // Find users from the same school who are not already matched
+    // Find all users except the current user and those already matched/liked
     const potentialMatches = await User.find({
       $and: [
         { _id: { $ne: userId } },
-        { school: currentUser.school },
         { _id: { $nin: [...currentUser.matches, ...currentUser.likes] } }
       ]
-    }).select("-password -matches -likes");
+    })
+    .select("_id fullName profilePic school bio")
+    .lean();
 
     res.status(200).json(potentialMatches);
   } catch (error) {
@@ -69,14 +70,14 @@ export const createMatch = async (req, res) => {
       
       await Promise.all([currentUser.save(), targetUser.save()]);
 
+      // Get complete user data for response
+      const completeTargetUser = await User.findById(targetUserId)
+        .select('_id fullName profilePic school bio');
+
       return res.status(200).json({ 
         message: "It's a match!", 
-        match,
-        targetUser: {
-          _id: targetUser._id,
-          fullName: targetUser.fullName,
-          profilePic: targetUser.profilePic
-        }
+        match: true,
+        targetUser: completeTargetUser
       });
     }
 
