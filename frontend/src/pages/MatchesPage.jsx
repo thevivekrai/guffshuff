@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../lib/axios';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
+import { useThemeStore } from '../store/useThemeStore';
 import toast from 'react-hot-toast';
 import { Heart, Loader, MessageCircle, X } from 'lucide-react';
 
@@ -14,6 +15,7 @@ const MatchesPage = () => {
   const [matchedUser, setMatchedUser] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const navigate = useNavigate();
+  const theme = useThemeStore(state => state.theme);
 
   useEffect(() => {
     const loadInitialMatches = async () => {
@@ -82,7 +84,7 @@ const MatchesPage = () => {
       return;
     }
     
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const response = await axiosInstance.post('/matches/like', {
@@ -165,7 +167,7 @@ const MatchesPage = () => {
   };
 
   const fetchInitialMatches = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const response = await axiosInstance.get('/matches/potential');
       if (response.data && response.data.length > 0) {
@@ -185,7 +187,7 @@ const MatchesPage = () => {
       setPotentialMatches([]);
       setHasMore(false);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -198,28 +200,18 @@ const MatchesPage = () => {
       toast.error('Unable to start chat. Invalid user data.');
       return;
     }
-
+    
     try {
-      // Update chat store with latest user data
+      // Get the chat ID from the matched user and update store
       const chatStore = useChatStore.getState();
       await chatStore.setSelectedUser(matchedUser);
       
-      // Close match modal
-      setMatchModalOpen(false);
-
-      // Navigate to chat page
-      navigate('/chat');
-    } catch (error) {
-      console.error('Error starting chat:', error);
-      toast.error('Failed to start chat. Please try again.');
-    }
-    try {
-      // Navigate to chat with the matched user
+      // Close the match modal and navigate to chat
       setMatchModalOpen(false);
       navigate(`/chat/${matchedUser._id}`);
     } catch (error) {
       console.error('Error starting chat:', error);
-      toast.error('Unable to start chat. Please try again.');
+      toast.error('Failed to start chat. Please try again.');
     }
   };
 
@@ -266,58 +258,90 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <div className="relative bg-white rounded-lg shadow-lg overflow-hidden">
-        <img 
-          src={currentMatch.profilePic || '/avatar.png'} 
-          alt={currentMatch.fullName}
-          className="w-full h-96 object-cover"
-        />
-        <div className="p-4 bg-white">
-          <h2 className="text-2xl font-bold">{currentMatch.fullName}</h2>
-          <p className="text-gray-600 mb-2">School: {currentMatch.school}</p>
-          {currentMatch.bio && (
-            <p className="text-gray-700 mb-4">{currentMatch.bio}</p>
-          )}
-          
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={handleSkip}
-              className="p-4 bg-gray-200 rounded-full hover:bg-gray-300 transition"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleLike}
-              className="p-4 bg-red-500 rounded-full hover:bg-red-600 transition text-white"
-            >
-              <Heart className="w-6 h-6" />
-            </button>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      <div className="container mx-auto p-4 max-w-2xl">
+        <div className={`relative rounded-lg shadow-xl overflow-hidden ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <img 
+            src={currentMatch.profilePic || '/avatar.png'} 
+            alt={currentMatch.fullName}
+            className="w-full h-96 object-cover"
+          />
+          <div className={`p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {currentMatch.fullName}
+            </h2>
+            <p className={`mb-2 ${
+              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              School: {currentMatch.school}
+            </p>
+            {currentMatch.bio && (
+              <p className={`mb-4 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
+              }`}>
+                {currentMatch.bio}
+              </p>
+            )}
+            
+            <div className="flex justify-center gap-6 mt-4">
+              <button
+                onClick={handleSkip}
+                className={`p-4 rounded-full transition transform hover:scale-105 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                    : 'bg-gray-200 hover:bg-gray-300'
+                }`}
+                aria-label="Skip"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleLike}
+                className="p-4 bg-red-500 rounded-full hover:bg-red-600 transition transform hover:scale-105 text-white"
+                aria-label="Like"
+              >
+                <Heart className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Match Modal */}
       {matchModalOpen && matchedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full text-center">
-            <div className="flex justify-center items-center gap-4 mb-4">
-              <img
-                src={useAuthStore.getState().authUser?.profilePic || '/avatar.png'}
-                alt="Your profile"
-                className="w-16 h-16 rounded-full"
-              />
-              <Heart className="w-8 h-8 text-red-500" />
-              <img
-                src={matchedUser.profilePic || '/avatar.png'}
-                alt={matchedUser.fullName}
-                className="w-16 h-16 rounded-full"
-              />
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className={`${
+            theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+          } rounded-lg p-8 max-w-sm w-full text-center shadow-2xl transform transition-all duration-300 scale-100`}>
+            <div className="flex justify-center items-center gap-6 mb-6">
+              <div className="relative">
+                <img
+                  src={useAuthStore.getState().authUser?.profilePic || '/avatar.png'}
+                  alt="Your profile"
+                  className="w-20 h-20 rounded-full border-4 border-red-500"
+                />
+              </div>
+              <Heart className="w-10 h-10 text-red-500 animate-pulse" />
+              <div className="relative">
+                <img
+                  src={matchedUser.profilePic || '/avatar.png'}
+                  alt={matchedUser.fullName}
+                  className="w-20 h-20 rounded-full border-4 border-red-500"
+                />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold mb-4">It's a Match!</h3>
+            <h3 className={`text-3xl font-bold mb-6 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              It's a Match!
+            </h3>
             <button
               onClick={handleStartChat}
-              className="w-full bg-blue-500 text-white py-2 rounded-lg mb-2 flex items-center justify-center gap-2"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg mb-2 flex items-center justify-center gap-2 transition transform hover:scale-105"
             >
               <MessageCircle className="w-5 h-5" />
               Start Texting
