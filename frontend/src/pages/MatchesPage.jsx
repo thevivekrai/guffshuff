@@ -17,10 +17,13 @@ const MatchesPage = () => {
     const fetchPotentialMatches = async () => {
       try {
         const response = await axiosInstance.get('/matches/potential');
-        setPotentialMatches(response.data);
+        // Shuffle the matches array to randomize the order
+        const shuffledMatches = response.data.sort(() => Math.random() - 0.5);
+        setPotentialMatches(shuffledMatches);
         setLoading(false);
       } catch (error) {
-        toast.error('Failed to load potential matches');
+        console.error('Error loading matches:', error);
+        toast.error(error.response?.data?.message || 'Failed to load potential matches');
         setLoading(false);
       }
     };
