@@ -45,12 +45,17 @@ export const createMatch = async (req, res) => {
       return res.status(404).json({ error: "Target user not found" });
     }
 
+    // Check if already liked
+    if (currentUser.likes.includes(targetUserId)) {
+      return res.status(400).json({ error: "You've already liked this user" });
+    }
+
     // Add to likes
     currentUser.likes.push(targetUserId);
     await currentUser.save();
 
     // Check if target user has already liked current user
-    if (targetUser.likes.includes(userId)) {
+    if (targetUser.likes.includes(userId.toString())) {
       // It's a match!
       const match = new Match({
         users: [userId, targetUserId],
