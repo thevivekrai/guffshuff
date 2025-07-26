@@ -27,6 +27,14 @@ export const createMatch = async (req, res) => {
     const { targetUserId } = req.body;
     const userId = req.user._id;
 
+    if (!targetUserId) {
+      return res.status(400).json({ error: "Target user ID is required" });
+    }
+
+    if (targetUserId === userId) {
+      return res.status(400).json({ error: "Cannot match with yourself" });
+    }
+
     // Check if users exist
     const [currentUser, targetUser] = await Promise.all([
       User.findById(userId),
