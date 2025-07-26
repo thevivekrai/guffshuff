@@ -41,14 +41,37 @@ const MatchesPage = () => {
       });
 
       if (response.data.match) {
-        setMatchedUser(response.data.targetUser);
+        setMatchedUser(currentMatch);
         setMatchModalOpen(true);
       }
 
       // Move to next match
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex(prev => {
+        if (prev + 1 >= potentialMatches.length) {
+          // Fetch more matches if we're at the end
+          fetchPotentialMatches();
+          return 0;
+        }
+        return prev + 1;
+      });
     } catch (error) {
-      toast.error('Failed to like user');
+      console.error('Like error:', error);
+      toast.error(error.response?.data?.message || 'Failed to like user');
+    }
+  };
+  
+  const fetchPotentialMatches = async () => {
+    try {
+      const response = await axiosInstance.get('/matches/potential');
+      // Shuffle the matches array to randomize the order
+      const shuffledMatches = response.data.sort(() => Math.random() - 0.5);
+      setPotentialMatches(shuffledMatches);
+      setCurrentIndex(0);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading matches:', error);
+      toast.error(error.response?.data?.message || 'Failed to load potential matches');
+      setLoading(false);
     }
   };
 
