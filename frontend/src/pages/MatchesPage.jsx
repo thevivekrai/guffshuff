@@ -11,19 +11,38 @@ const MatchesPage = () => {
   const [loading, setLoading] = useState(true);
   const [matchModalOpen, setMatchModalOpen] = useState(false);
   const [matchedUser, setMatchedUser] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPotentialMatches = async () => {
       try {
         const response = await axiosInstance.get('/matches/potential');
-        // Shuffle the matches array to randomize the order
-        const shuffledMatches = response.data.sort(() => Math.random() - 0.5);
-        setPotentialMatches(shuffledMatches);
-        setLoading(false);
+        if (!response.data || response.data.length === 0) {
+          setHasMore(false);
+          setPotentialMatches([]);
+        } else {
+          // Filter out any matches without required fields
+          const validMatches = response.data.filter(match => 
+            match && match._id && match.fullName && match.school
+          );
+          
+          // Shuffle the valid matches
+          const shuffledMatches = [...validMatches].sort(() => Math.random() - 0.5);
+          setPotentialMatches(shuffledMatches);
+          setHasMore(true);
+        }
       } catch (error) {
         console.error('Error loading matches:', error);
-        toast.error(error.response?.data?.message || 'Failed to load potential matches');
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 2000); // Retry after 2 seconds
+        } else {
+          toast.error('Unable to load matches. Please try again later.');
+        }
+      } finally {
         setLoading(false);
       }
     };
@@ -33,7 +52,10 @@ const MatchesPage = () => {
 
   const handleLike = async () => {
     const currentMatch = potentialMatches[currentIndex];
-    if (!currentMatch) return;
+    if (!currentMatch || !currentMatch._id) {
+      toast.error('Invalid user data');
+      return;
+    }
 
     try {
       const response = await axiosInstance.post('/matches/like', {
@@ -41,22 +63,42 @@ const MatchesPage = () => {
       });
 
       if (response.data.match) {
-        setMatchedUser(currentMatch);
+        // Create the match in the chat store
+        setMatchedUser({
+          _id: currentMatch._id,
+          fullName: currentMatch.fullName,
+          profilePic: currentMatch.profilePic,
+          school: currentMatch.school,
+          bio: currentMatch.bio
+        });
         setMatchModalOpen(true);
       }
 
-      // Move to next match
-      setCurrentIndex(prev => {
-        if (prev + 1 >= potentialMatches.length) {
-          // Fetch more matches if we're at the end
-          fetchPotentialMatches();
-          return 0;
-        }
-        return prev + 1;
-      });
+      // Remove the current match from the array
+      setPotentialMatches(prev => prev.filter(match => match._id !== currentMatch._id));
+
+      // If we're running low on matches, fetch more
+      if (potentialMatches.length <= 3) {
+        fetchPotentialMatches();
+      }
+
+      // Move to next match or show no more matches
+      if (currentIndex >= potentialMatches.length - 1) {
+        setCurrentIndex(0);
+      } else {
+        setCurrentIndex(prev => prev + 1);
+      }
     } catch (error) {
       console.error('Like error:', error);
-      toast.error(error.response?.data?.message || 'Failed to like user');
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to like user';
+      toast.error(errorMessage);
+      
+      // If we get a 500 error, wait a moment and try to refresh the matches
+      if (error.response?.status === 500) {
+        setTimeout(() => {
+          fetchPotentialMatches();
+        }, 1000);
+      }
     }
   };
   
