@@ -122,8 +122,14 @@ const MatchesPage = () => {
   };
 
   const handleStartChat = () => {
-    if (matchedUser) {
-      navigate(`/chat/${matchedUser._id}`);
+    if (matchedUser && matchedUser._id) {
+      setMatchModalOpen(false); // Close the modal first
+      // Small delay to allow modal animation to complete
+      setTimeout(() => {
+        navigate(`/chat/${matchedUser._id}`);
+      }, 100);
+    } else {
+      toast.error('Unable to start chat. Please try again.');
     }
   };
 
@@ -137,11 +143,34 @@ const MatchesPage = () => {
 
   const currentMatch = potentialMatches[currentIndex];
 
-  if (!currentMatch) {
+  if (!currentMatch || !hasMore) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <h2 className="text-2xl font-bold mb-4">No More Matches</h2>
-        <p className="text-gray-600">Check back later for new potential matches!</p>
+        <p className="text-gray-600 mb-4">Check back later for new potential matches!</p>
+        <button 
+          onClick={fetchPotentialMatches}
+          className="btn btn-primary"
+        >
+          Refresh Matches
+        </button>
+      </div>
+    );
+  }
+
+  // Ensure all required data is present
+  if (!currentMatch.fullName || !currentMatch._id) {
+    console.error('Invalid match data:', currentMatch);
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+        <p className="text-gray-600 mb-4">Unable to load match information</p>
+        <button 
+          onClick={fetchPotentialMatches}
+          className="btn btn-primary"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
