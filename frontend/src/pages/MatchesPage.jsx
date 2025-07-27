@@ -90,28 +90,19 @@ const MatchesPage = () => {
     setIsLoading(true);
 
     try {
-      // First update the chat store with the current user
-      const chatStore = useChatStore.getState();
-      await chatStore.setSelectedUser(currentMatch);
-
-      // Then try to create the match
+      // Create the match first
       const response = await axiosInstance.post('/matches/like', {
         targetUserId: currentMatch._id
       });
 
       // If it's a match, handle the match flow
       if (response.data.match && response.data.targetUser) {
-        const matchedUserData = {
-          ...currentMatch,
-          ...response.data.targetUser,
-          _id: currentMatch._id // Ensure we keep the original ID
-        };
+        const matchedUserData = response.data.targetUser;
 
         try {
           // Update chat store and fetch messages
           const chatStore = useChatStore.getState();
           await chatStore.setSelectedUser(matchedUserData);
-          await chatStore.getMessages(matchedUserData._id);
           
           // Update match state and show modal
           setMatchedUser(matchedUserData);
@@ -123,7 +114,7 @@ const MatchesPage = () => {
           // Navigate to chat after a brief delay to show the match
           setTimeout(() => {
             setMatchModalOpen(false);
-            navigate(`/chat/${matchedUserData._id}`);
+            navigate('/chat');
           }, 2000);
         } catch (err) {
           console.error('Error setting up chat:', err);
@@ -270,17 +261,9 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className={`min-h-screen pt-24 ${
-      theme === 'coffee' ? 'bg-base-200' : 
-      theme === 'dark' ? 'bg-gray-900' : 
-      'bg-gray-100'
-    }`}>
+    <div className="min-h-screen pt-24 bg-base-200 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <div className={`relative rounded-lg shadow-xl overflow-hidden ${
-          theme === 'coffee' ? 'bg-base-100 text-base-content' : 
-          theme === 'dark' ? 'bg-gray-800 text-white' : 
-          'bg-white text-gray-900'
-        }`}>
+        <div className="relative rounded-lg shadow-xl overflow-hidden bg-base-100 dark:bg-gray-800 text-base-content">
           <img 
             src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
             alt={currentMatch.fullName}
@@ -292,26 +275,14 @@ const MatchesPage = () => {
             theme === 'dark' ? 'bg-gray-800' : 
             'bg-white'
           }`}>
-            <h2 className={`text-2xl font-bold mb-2 ${
-              theme === 'coffee' ? 'text-base-content' :
-              theme === 'dark' ? 'text-white' : 
-              'text-gray-900'
-            }`}>
+            <h2 className="text-2xl font-bold mb-2 text-base-content dark:text-white">
               {currentMatch.fullName}
             </h2>
-            <p className={`mb-2 ${
-              theme === 'coffee' ? 'text-base-content/80' :
-              theme === 'dark' ? 'text-gray-300' : 
-              'text-gray-600'
-            }`}>
+            <p className="mb-2 text-base-content/80 dark:text-gray-300">
               School: {currentMatch.school}
             </p>
             {currentMatch.bio && (
-              <p className={`mb-4 ${
-                theme === 'coffee' ? 'text-base-content/70' :
-                theme === 'dark' ? 'text-gray-400' : 
-                'text-gray-700'
-              }`}>
+              <p className="mb-4 text-base-content/70 dark:text-gray-400">
                 {currentMatch.bio}
               </p>
             )}
@@ -319,21 +290,14 @@ const MatchesPage = () => {
             <div className="flex justify-center gap-6 mt-4">
               <button
                 onClick={handleSkip}
-                className={`p-4 rounded-full transition transform hover:scale-105 ${
-                  theme === 'coffee' ? 'bg-base-300 hover:bg-base-200 text-base-content' :
-                  theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 
-                  'bg-gray-200 hover:bg-gray-300'
-                }`}
+                className="p-4 rounded-full transition transform hover:scale-105 bg-base-300 hover:bg-base-200 text-base-content dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
                 aria-label="Skip"
               >
                 <X className="w-6 h-6" />
               </button>
               <button
                 onClick={handleLike}
-                className={`p-4 rounded-full transition transform hover:scale-105 text-white ${
-                  theme === 'coffee' ? 'bg-primary hover:bg-primary-focus' :
-                  'bg-red-500 hover:bg-red-600'
-                }`}
+                className="p-4 rounded-full transition transform hover:scale-105 text-white bg-primary hover:bg-primary-focus dark:bg-red-500 dark:hover:bg-red-600"
                 aria-label="Like"
               >
                 <Heart className="w-6 h-6" />
@@ -346,9 +310,7 @@ const MatchesPage = () => {
       {/* Match Modal */}
       {matchModalOpen && matchedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className={`${
-            theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-          } rounded-lg p-8 max-w-sm w-full text-center shadow-2xl transform transition-all duration-300 scale-100`}>
+          <div className="rounded-lg p-8 max-w-sm w-full text-center shadow-2xl transform transition-all duration-300 scale-100 bg-base-100 dark:bg-gray-800">
             <div className="flex justify-center items-center gap-6 mb-6">
               <div className="relative">
                 <img
