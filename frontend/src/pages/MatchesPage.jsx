@@ -90,36 +90,35 @@ const MatchesPage = () => {
     setIsLoading(true);
 
     try {
-      // Create the match first
+      // Create the match first - fix the endpoint path
       const response = await axiosInstance.post('/matches/like', {
         targetUserId: currentMatch._id
       });
 
       // If it's a match, handle the match flow
       if (response.data.match && response.data.targetUser) {
-        const matchedUserData = response.data.targetUser;
+        const matchedUserData = {
+          ...currentMatch,
+          ...response.data.targetUser,
+          _id: currentMatch._id // Ensure we keep the original ID
+        };
 
-        try {
-          // Update chat store and fetch messages
-          const chatStore = useChatStore.getState();
-          await chatStore.setSelectedUser(matchedUserData);
-          
-          // Update match state and show modal
-          setMatchedUser(matchedUserData);
-          setMatchModalOpen(true);
-          
-          // Remove matched user from potential matches
-          setPotentialMatches(prev => prev.filter(m => m._id !== currentMatch._id));
-
-          // Navigate to chat after a brief delay to show the match
-          setTimeout(() => {
-            setMatchModalOpen(false);
-            navigate('/chat');
-          }, 2000);
-        } catch (err) {
-          console.error('Error setting up chat:', err);
-          toast.error('Error setting up chat. Please try again.');
-        }
+        // Update chat store and state
+        const chatStore = useChatStore.getState();
+        await chatStore.setSelectedUser(matchedUserData);
+        
+        // Update match state and show modal
+        setMatchedUser(matchedUserData);
+        setMatchModalOpen(true);
+        
+        // Remove matched user from potential matches
+        setPotentialMatches(prev => prev.filter(m => m._id !== currentMatch._id));
+        
+        // Navigate to chat after a short delay to show the match modal
+        setTimeout(() => {
+          setMatchModalOpen(false);
+          navigate(`/chat/${matchedUserData._id}`);
+        }, 2000);
       } else {
         // Not a match, move to next and fetch more if needed
         if (currentIndex >= potentialMatches.length - 1) {
@@ -205,11 +204,10 @@ const MatchesPage = () => {
     }
     
     try {
-      // Get the chat ID from the matched user and update store
       const chatStore = useChatStore.getState();
       await chatStore.setSelectedUser(matchedUser);
       
-      // Close the match modal and navigate to chat
+      // Close modal and navigate to chat
       setMatchModalOpen(false);
       navigate(`/chat/${matchedUser._id}`);
     } catch (error) {
@@ -262,12 +260,12 @@ const MatchesPage = () => {
 
   return (
     <div className="min-h-screen pt-24 bg-base-200 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="container mx-auto px-4 py-6 max-w-xl">
         <div className="relative rounded-lg shadow-xl overflow-hidden bg-base-100 dark:bg-gray-800 text-base-content">
           <img 
             src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
             alt={currentMatch.fullName}
-            className="w-full h-96 object-cover"
+            className="w-full h-80 object-cover"
             onError={() => setImgError(prev => ({ ...prev, [currentMatch._id]: true }))}
           />
           <div className={`p-6 ${
