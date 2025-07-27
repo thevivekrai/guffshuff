@@ -90,6 +90,11 @@ const MatchesPage = () => {
     setIsLoading(true);
 
     try {
+      // First update the chat store with the current user
+      const chatStore = useChatStore.getState();
+      await chatStore.setSelectedUser(currentMatch);
+
+      // Then try to create the match
       const response = await axiosInstance.post('/matches/like', {
         targetUserId: currentMatch._id
       });
@@ -102,23 +107,27 @@ const MatchesPage = () => {
           _id: currentMatch._id // Ensure we keep the original ID
         };
 
-        // Update chat store first
-        const chatStore = useChatStore.getState();
-        await chatStore.setSelectedUser(matchedUserData);
-        
-        // Update match state
-        setMatchedUser(matchedUserData);
-        setMatchModalOpen(true);
-        
-        // Remove matched user from potential matches
-        setPotentialMatches(prev => prev.filter(m => m._id !== currentMatch._id));
-
-        // Pre-fetch messages for the match
         try {
+          // Update chat store and fetch messages
+          const chatStore = useChatStore.getState();
+          await chatStore.setSelectedUser(matchedUserData);
           await chatStore.getMessages(matchedUserData._id);
+          
+          // Update match state and show modal
+          setMatchedUser(matchedUserData);
+          setMatchModalOpen(true);
+          
+          // Remove matched user from potential matches
+          setPotentialMatches(prev => prev.filter(m => m._id !== currentMatch._id));
+
+          // Navigate to chat after a brief delay to show the match
+          setTimeout(() => {
+            setMatchModalOpen(false);
+            navigate(`/chat/${matchedUserData._id}`);
+          }, 2000);
         } catch (err) {
-          console.error('Error pre-fetching messages:', err);
-          // Non-blocking error - don't show to user
+          console.error('Error setting up chat:', err);
+          toast.error('Error setting up chat. Please try again.');
         }
       } else {
         // Not a match, move to next and fetch more if needed
@@ -261,10 +270,16 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
-      <div className="container mx-auto p-4 max-w-2xl">
+    <div className={`min-h-screen pt-24 ${
+      theme === 'coffee' ? 'bg-base-200' : 
+      theme === 'dark' ? 'bg-gray-900' : 
+      'bg-gray-100'
+    }`}>
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         <div className={`relative rounded-lg shadow-xl overflow-hidden ${
-          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+          theme === 'coffee' ? 'bg-base-100 text-base-content' : 
+          theme === 'dark' ? 'bg-gray-800 text-white' : 
+          'bg-white text-gray-900'
         }`}>
           <img 
             src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
@@ -272,20 +287,30 @@ const MatchesPage = () => {
             className="w-full h-96 object-cover"
             onError={() => setImgError(prev => ({ ...prev, [currentMatch._id]: true }))}
           />
-          <div className={`p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`p-6 ${
+            theme === 'coffee' ? 'bg-base-100' : 
+            theme === 'dark' ? 'bg-gray-800' : 
+            'bg-white'
+          }`}>
             <h2 className={`text-2xl font-bold mb-2 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
+              theme === 'coffee' ? 'text-base-content' :
+              theme === 'dark' ? 'text-white' : 
+              'text-gray-900'
             }`}>
               {currentMatch.fullName}
             </h2>
             <p className={`mb-2 ${
-              theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              theme === 'coffee' ? 'text-base-content/80' :
+              theme === 'dark' ? 'text-gray-300' : 
+              'text-gray-600'
             }`}>
               School: {currentMatch.school}
             </p>
             {currentMatch.bio && (
               <p className={`mb-4 ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                theme === 'coffee' ? 'text-base-content/70' :
+                theme === 'dark' ? 'text-gray-400' : 
+                'text-gray-700'
               }`}>
                 {currentMatch.bio}
               </p>
@@ -295,9 +320,9 @@ const MatchesPage = () => {
               <button
                 onClick={handleSkip}
                 className={`p-4 rounded-full transition transform hover:scale-105 ${
-                  theme === 'dark' 
-                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300'
+                  theme === 'coffee' ? 'bg-base-300 hover:bg-base-200 text-base-content' :
+                  theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 
+                  'bg-gray-200 hover:bg-gray-300'
                 }`}
                 aria-label="Skip"
               >
@@ -305,7 +330,10 @@ const MatchesPage = () => {
               </button>
               <button
                 onClick={handleLike}
-                className="p-4 bg-red-500 rounded-full hover:bg-red-600 transition transform hover:scale-105 text-white"
+                className={`p-4 rounded-full transition transform hover:scale-105 text-white ${
+                  theme === 'coffee' ? 'bg-primary hover:bg-primary-focus' :
+                  'bg-red-500 hover:bg-red-600'
+                }`}
                 aria-label="Like"
               >
                 <Heart className="w-6 h-6" />
