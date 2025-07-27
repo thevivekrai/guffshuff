@@ -90,17 +90,14 @@ const MatchesPage = () => {
     setIsLoading(true);
 
     try {
-      // Create the match first - fix the endpoint path
-      const response = await axiosInstance.post('/matches/like', {
-        targetUserId: currentMatch._id
-      });
+      // Create the match first - fix the endpoint path and add the proper API route
+      const response = await axiosInstance.post(`/api/matches/like/${currentMatch._id}`);
 
       // If it's a match, handle the match flow
-      if (response.data.match && response.data.targetUser) {
+      if (response.data.matched) {
         const matchedUserData = {
           ...currentMatch,
-          ...response.data.targetUser,
-          _id: currentMatch._id // Ensure we keep the original ID
+          _id: currentMatch._id
         };
 
         // Update chat store and state
@@ -259,28 +256,26 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 bg-base-200 dark:bg-gray-900">
+    <div className={`min-h-screen pt-24 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <div className="container mx-auto px-4 py-6 max-w-xl">
-        <div className="relative rounded-lg shadow-xl overflow-hidden bg-base-100 dark:bg-gray-800 text-base-content">
+        <div className={`relative rounded-lg shadow-xl overflow-hidden ${
+          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <img 
             src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
             alt={currentMatch.fullName}
             className="w-full h-80 object-cover"
             onError={() => setImgError(prev => ({ ...prev, [currentMatch._id]: true }))}
           />
-          <div className={`p-6 ${
-            theme === 'coffee' ? 'bg-base-100' : 
-            theme === 'dark' ? 'bg-gray-800' : 
-            'bg-white'
-          }`}>
-            <h2 className="text-2xl font-bold mb-2 text-base-content dark:text-white">
+          <div className={`p-6 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <h2 className={`text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               {currentMatch.fullName}
             </h2>
-            <p className="mb-2 text-base-content/80 dark:text-gray-300">
+            <p className={`mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
               School: {currentMatch.school}
             </p>
             {currentMatch.bio && (
-              <p className="mb-4 text-base-content/70 dark:text-gray-400">
+              <p className={`mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                 {currentMatch.bio}
               </p>
             )}
@@ -288,14 +283,18 @@ const MatchesPage = () => {
             <div className="flex justify-center gap-6 mt-4">
               <button
                 onClick={handleSkip}
-                className="p-4 rounded-full transition transform hover:scale-105 bg-base-300 hover:bg-base-200 text-base-content dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+                className={`p-4 rounded-full transition transform hover:scale-105 ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                }`}
                 aria-label="Skip"
               >
                 <X className="w-6 h-6" />
               </button>
               <button
                 onClick={handleLike}
-                className="p-4 rounded-full transition transform hover:scale-105 text-white bg-primary hover:bg-primary-focus dark:bg-red-500 dark:hover:bg-red-600"
+                className="p-4 rounded-full transition transform hover:scale-105 text-white bg-red-500 hover:bg-red-600"
                 aria-label="Like"
               >
                 <Heart className="w-6 h-6" />
