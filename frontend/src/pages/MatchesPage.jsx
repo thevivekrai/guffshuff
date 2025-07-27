@@ -31,8 +31,10 @@ const MatchesPage = () => {
               match._id && 
               match.fullName && 
               match.school &&
+              match.email &&
               typeof match.fullName === 'string' &&
-              typeof match.school === 'string'
+              typeof match.school === 'string' &&
+              typeof match.email === 'string'
             )
             .map(match => ({
               ...match,
@@ -90,15 +92,15 @@ const MatchesPage = () => {
     setIsLoading(true);
 
     try {
-      // Create the match first - fix the endpoint path and add the proper API route
-      const response = await axiosInstance.post(`/api/matches/like/${currentMatch._id}`);
+      // Create the match first
+      const response = await axiosInstance.post('/matches/like', {
+        targetUserId: currentMatch._id
+      });
 
       // If it's a match, handle the match flow
-      if (response.data.matched) {
-        const matchedUserData = {
-          ...currentMatch,
-          _id: currentMatch._id
-        };
+      if (response.data.match) {
+        // Use the complete user data from response
+        const matchedUserData = response.data.targetUser;
 
         // Update chat store and state
         const chatStore = useChatStore.getState();
@@ -136,6 +138,8 @@ const MatchesPage = () => {
       console.error('Like error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to like user';
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -256,26 +260,24 @@ const MatchesPage = () => {
   }
 
   return (
-    <div className={`min-h-screen pt-24 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className="min-h-screen pt-24 bg-gray-900">
       <div className="container mx-auto px-4 py-6 max-w-xl">
-        <div className={`relative rounded-lg shadow-xl overflow-hidden ${
-          theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-        }`}>
+        <div className="relative rounded-lg shadow-xl overflow-hidden bg-gray-800">
           <img 
             src={imgError[currentMatch._id] ? '/avatar.png' : (currentMatch.profilePic || '/avatar.png')} 
             alt={currentMatch.fullName}
             className="w-full h-80 object-cover"
             onError={() => setImgError(prev => ({ ...prev, [currentMatch._id]: true }))}
           />
-          <div className={`p-6 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
-            <h2 className={`text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <div className="p-6 bg-gray-800 text-white">
+            <h2 className="text-2xl font-bold mb-2 text-white">
               {currentMatch.fullName}
             </h2>
-            <p className={`mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+            <p className="mb-2 text-gray-300">
               School: {currentMatch.school}
             </p>
             {currentMatch.bio && (
-              <p className={`mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className="mb-4 text-gray-400">
                 {currentMatch.bio}
               </p>
             )}
@@ -283,11 +285,7 @@ const MatchesPage = () => {
             <div className="flex justify-center gap-6 mt-4">
               <button
                 onClick={handleSkip}
-                className={`p-4 rounded-full transition transform hover:scale-105 ${
-                  theme === 'dark' 
-                    ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-                }`}
+                className="p-4 rounded-full transition transform hover:scale-105 bg-gray-700 hover:bg-gray-600 text-white"
                 aria-label="Skip"
               >
                 <X className="w-6 h-6" />
@@ -307,7 +305,7 @@ const MatchesPage = () => {
       {/* Match Modal */}
       {matchModalOpen && matchedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="rounded-lg p-8 max-w-sm w-full text-center shadow-2xl transform transition-all duration-300 scale-100 bg-base-100 dark:bg-gray-800">
+          <div className="rounded-lg p-8 max-w-sm w-full text-center shadow-2xl transform transition-all duration-300 scale-100 bg-gray-800">
             <div className="flex justify-center items-center gap-6 mb-6">
               <div className="relative">
                 <img
@@ -326,9 +324,7 @@ const MatchesPage = () => {
                 />
               </div>
             </div>
-            <h3 className={`text-3xl font-bold mb-6 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
+            <h3 className="text-3xl font-bold mb-6 text-white">
               It's a Match!
             </h3>
             <button
